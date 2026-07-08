@@ -1,287 +1,161 @@
-# E-Commerce Platform with eSewa & Bank Integration
+# E-Commerce Platform
 
-A production-ready full-stack e-commerce application built with NestJS, React, and PostgreSQL, featuring secure authentication, comprehensive product management, shopping cart, and integrated payment solutions (eSewa & Bank Transfer).
+A clean, beginner-friendly e-commerce platform built with **NestJS**, **React**, and **Prisma**.
 
-## 🚀 Features
+## Features
 
-- **User Management**: Registration, login, profile management with JWT authentication
-- **Product Management**: CRUD operations, variants, inventory tracking, search & filters
-- **Shopping Cart**: Persistent database-backed cart with real-time updates
-- **Checkout Process**: Multi-step checkout with address management, tax calculation
-- **Payment Integration**: eSewa and Bank Transfer payment methods with verification
-- **Order Management**: Complete order lifecycle from creation to delivery
-- **Admin Dashboard**: Comprehensive dashboard with statistics, user/product/order management
-- **Security**: Bcrypt password hashing, JWT tokens, role-based access control
-- **Additional Features**: Reviews, ratings, wishlist, search functionality
+- ✅ **JWT Authentication** - Secure login and registration
+- ✅ **Product CRUD** - Create, read, update, delete products (Admin)
+- ✅ **Cart System** - Add/remove items from cart
+- ✅ **Order Placement** - Place orders from cart
+- ✅ **eSewa Payment** - Integrate eSewa payment gateway
+- ✅ **Admin Dashboard** - Manage products, orders, users, inventory
+- ✅ **User Orders** - View your orders and status
 
-## 🛠 Technology Stack
+## Tech Stack
 
-### Backend
-- **Framework**: NestJS
-- **Language**: TypeScript
-- **Database**: PostgreSQL with TypeORM
-- **Authentication**: JWT (jsonwebtoken)
-- **Password Hashing**: Bcrypt
-- **API Documentation**: Swagger/OpenAPI
+**Backend:**
+- NestJS
+- Prisma ORM
+- PostgreSQL
+- JWT Authentication
 
-### Frontend
-- **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS
-- **HTTP Client**: Axios/Fetch
-- **UI Components**: shadcn/ui
+**Frontend:**
+- React
+- Tailwind CSS
+- Axios
+- React Router
 
-### DevOps
-- **Containerization**: Docker & Docker Compose
-- **Deployment**: Vercel (Frontend), VPS/Docker (Backend)
-- **Version Control**: Git & GitHub
-
-## 📁 Project Structure
+## Project Structure
 
 ```
-v0-project/
-├── Backend/                    # NestJS backend application
+/Ecommerce
+├── Backend/          # NestJS backend
 │   ├── src/
-│   │   ├── admin/             # Admin dashboard features
-│   │   ├── auth/              # Authentication
-│   │   ├── cart/              # Shopping cart
-│   │   ├── categories/        # Categories
-│   │   ├── orders/            # Order management
-│   │   ├── payment/           # Payment handling
-│   │   ├── products/          # Product management
-│   │   ├── reviews/           # Reviews & ratings
-│   │   ├── users/             # User management
-│   │   ├── wishlist/          # Wishlist
-│   │   └── main.ts            # Entry point
-│   ├── package.json
-│   └── Dockerfile
-├── frontend/                   # React frontend application
+│   ├── prisma/       # Database schema
+│   └── package.json
+├── frontend/         # React frontend
 │   ├── src/
-│   │   ├── components/        # Reusable components
-│   │   ├── pages/             # Page components
-│   │   ├── services/          # API services
-│   │   └── main.tsx
-│   ├── package.json
-│   └── vite.config.ts
-├── docker-compose.yml          # Multi-container orchestration
-├── PROJECT_DOCUMENTATION.md    # Complete technical documentation
-├── PRODUCTION_READY_REPORT.md  # Production readiness checklist
-├── SETUP_GUIDE.md              # Installation & setup guide
-├── API_EXAMPLES.md             # API endpoint examples
-└── README.md                   # This file
+│   └── package.json
+└── README.md
 ```
 
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js 18+
-- PostgreSQL 14+
-- Docker & Docker Compose (optional)
-- Git
+## Quick Start
 
 ### Backend Setup
 
 ```bash
 cd Backend
 npm install
-
-# Create .env file
-cp .env.example .env
-
-# Start development server
+npx prisma generate
+npx prisma migrate dev --name init
 npm run start:dev
-
-# Server runs on http://localhost:2004
 ```
+
+Backend runs on: `http://localhost:2004`
 
 ### Frontend Setup
 
 ```bash
 cd frontend
 npm install
-
-# Create .env file
-echo "VITE_API_URL=http://localhost:2004" > .env
-
-# Start development server
-npm run dev
-
-# Frontend runs on http://localhost:5173
+npm start
 ```
 
-### Docker Setup
+Frontend runs on: `http://localhost:3000`
 
-```bash
-# From project root
-docker-compose up -d
+## Environment Variables
 
-# Containers:
-# - Backend: http://localhost:2004
-# - Frontend: http://localhost:3000
-# - Database: PostgreSQL on 5432
+**Backend** (`.env`):
+```
+DATABASE_URL=postgresql://user:password@localhost:5432/ecommerce
+JWT_SECRET=your_secret_key
+PORT=2004
 ```
 
-## 📚 Documentation
+**Frontend** (`.env`):
+```
+REACT_APP_API_URL=http://localhost:2004
+```
 
-- **[PROJECT_DOCUMENTATION.md](./PROJECT_DOCUMENTATION.md)**: Complete technical documentation including architecture, database schema, and API endpoints
-- **[SETUP_GUIDE.md](./SETUP_GUIDE.md)**: Detailed setup and installation guide
-- **[PRODUCTION_READY_REPORT.md](./PRODUCTION_READY_REPORT.md)**: Production checklist and deployment guide
-- **[API_EXAMPLES.md](./API_EXAMPLES.md)**: API endpoint examples with request/response samples
-
-## 🔐 Security Features
-
-- **JWT Authentication**: Secure token-based authentication with 24-hour expiry
-- **Password Security**: Bcrypt hashing with 10 rounds, no plain text storage
-- **Role-Based Access Control**: ADMIN and USER roles with decorator-based authorization
-- **Input Validation**: class-validator on all API endpoints
-- **CORS**: Properly configured for production
-- **Payment Security**: PCI-compliant, no card data stored
-
-## 💳 Payment Integration
-
-### eSewa
-- Merchant code configuration
-- Automatic payment verification
-- Transaction tracking and reconciliation
-
-### Bank Transfer
-- Account details management
-- Transfer confirmation workflow
-- Manual verification system
-
-## 📊 API Endpoints
+## Key Features
 
 ### Authentication
-- `POST /users/auth/signup` - User registration
-- `POST /users/auth/login` - User login
-- `POST /users/auth/logout` - User logout
+- User signup and login with JWT
+- Password hashing with bcrypt
+- Protected routes with JWT middleware
 
 ### Products
-- `GET /products` - List all products (paginated)
-- `GET /products/:id` - Product details
-- `POST /products` - Create product (Admin only)
-- `PUT /products/:id` - Update product (Admin only)
-- `DELETE /products/:id` - Delete product (Admin only)
+- Admin can add, update, delete products
+- Users can view products and search
+- Product filtering and pagination
+
+### Shopping Cart
+- Add/remove items from cart
+- Update quantities
+- Persistent cart storage
+
+### Orders
+- Place orders from cart items
+- Track order status
+- View order history
+
+### Admin Dashboard
+```
+Dashboard
+├── Products
+│   ├── Add Product
+│   └── View/Edit Products
+├── Orders
+│   ├── All Orders
+│   └── Update Status
+├── Users
+├── Inventory
+└── Settings
+```
+
+### Payment
+- eSewa payment integration
+- Payment verification
+- Transaction tracking
+
+## API Endpoints
+
+### Auth
+- `POST /auth/signup` - Register
+- `POST /auth/login` - Login
+
+### Products
+- `GET /products` - List products
+- `GET /products/:id` - Get product
+- `POST /products` - Create (Admin)
+- `PUT /products/:id` - Update (Admin)
+- `DELETE /products/:id` - Delete (Admin)
 
 ### Cart
 - `GET /cart` - Get cart items
-- `POST /cart/add` - Add to cart
-- `PUT /cart/:id` - Update quantity
+- `POST /cart` - Add item
+- `PUT /cart/:id` - Update item
 - `DELETE /cart/:id` - Remove item
 
 ### Orders
-- `POST /orders/checkout` - Create order
+- `POST /orders` - Create order
 - `GET /orders` - Get user orders
-- `GET /orders/:id` - Order details
+- `GET /orders/:id` - Get order details
 
-### Payments
-- `POST /payments/esewa` - eSewa payment
-- `POST /payments/bank` - Bank transfer
-- `POST /payments/verify/:transactionId` - Verify payment
+### Payment
+- `POST /payment/esewa` - eSewa payment
+- `POST /payment/verify` - Verify payment
 
-### Admin
-- `GET /admin/dashboard` - Dashboard statistics
-- `GET /admin/users` - All users
-- `GET /admin/orders` - All orders
+## Database Schema
 
-Complete API documentation available at: `http://localhost:2004/api`
+Core entities:
+- User (id, email, password, role, createdAt)
+- Product (id, name, description, price, stock, image)
+- Cart (id, userId, items)
+- Order (id, userId, items, total, status)
+- Payment (id, orderId, amount, status, method)
 
-## 🧪 Testing
+## License
 
-Manual test cases included for:
-- User registration and login
-- Product search and filtering
-- Add to cart and cart management
-- Checkout process
-- Payment processing
-- Order creation and tracking
-
-## 📈 Performance
-
-| Metric | Target | Status |
-|--------|--------|--------|
-| Page Load | <3s | ✅ Met |
-| API Response | <500ms | ✅ Met |
-| Database Queries | Optimized | ✅ Met |
-
-## 🔄 Development Workflow
-
-```bash
-# Create feature branch
-git checkout -b feature/feature-name
-
-# Make changes
-# Commit with meaningful messages
-git add .
-git commit -m "feat: add feature description"
-
-# Push to remote
-git push origin feature/feature-name
-
-# Create Pull Request
-```
-
-## 📦 Deployment
-
-### Backend (Docker)
-```bash
-docker build -t ecommerce-backend:latest .
-docker run -d -p 2004:2004 --env-file .env ecommerce-backend:latest
-```
-
-### Frontend (Vercel)
-```bash
-npm i -g vercel
-vercel --prod
-```
-
-## 🗂 Database Schema
-
-The project uses PostgreSQL with TypeORM. Key entities:
-- **User**: User accounts with authentication
-- **Product**: Products with variants and inventory
-- **Category**: Product categories
-- **Cart**: Shopping cart items
-- **Order**: Orders with status tracking
-- **OrderItem**: Individual items in orders
-- **Payment**: Payment transactions
-- **Review**: Product reviews
-- **Wishlist**: User wishlists
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open Pull Request
-
-## 📝 License
-
-This project is for educational purposes.
-
-## 👨‍💻 Support
-
-For issues or questions:
-- Check the [PROJECT_DOCUMENTATION.md](./PROJECT_DOCUMENTATION.md) for technical details
-- Review [API_EXAMPLES.md](./API_EXAMPLES.md) for API usage
-- See [SETUP_GUIDE.md](./SETUP_GUIDE.md) for installation help
-
-## ✅ Production Checklist
-
-- ✅ All core features implemented
-- ✅ Security measures in place
-- ✅ Database schema optimized
-- ✅ API fully documented
-- ✅ Error handling implemented
-- ✅ Input validation added
-- ✅ CORS configured
-- ✅ Environment variables setup
-- ✅ Docker configuration ready
-- ✅ Production deployment guide included
-
----
-
-**Version**: 1.0.0  
-**Status**: Production Ready  
-**Last Updated**: July 8, 2025
+MIT

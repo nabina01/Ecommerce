@@ -17,7 +17,12 @@ const WishlistPage = lazy(() => import('./pages/WishlistPage').then(m => ({ defa
 const CategoriesPage = lazy(() => import('./pages/CategoriesPage').then(m => ({ default: m.CategoriesPage })));
 const AboutPage = lazy(() => import('./pages/cms/AboutPage').then(m => ({ default: m.AboutPage })));
 const ContactPage = lazy(() => import('./pages/cms/ContactPage').then(m => ({ default: m.ContactPage })));
-const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'));
+const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
+const AdminProducts = lazy(() => import('./pages/admin/Products'));
+const AdminOrders = lazy(() => import('./pages/admin/Orders'));
+const AdminUsers = lazy(() => import('./pages/admin/Users'));
+const AdminSettings = lazy(() => import('./pages/admin/Settings'));
 
 // Create Query Client
 const queryClient = new QueryClient({
@@ -141,10 +146,16 @@ export const App: React.FC = () => {
             path="/admin/*"
             element={
               <Suspense fallback={<PageLoader />}>
-                <AdminDashboard />
+                <AdminLayout />
               </Suspense>
             }
-          />
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="settings" element={<AdminSettings />} />
+          </Route>
 
           {/* 404 */}
           <Route path="*" element={<NotFoundPage />} />

@@ -1,14 +1,18 @@
 import {
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
+  BadRequestException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
-import { Order, PaymentMethod, OrderStatus } from './entities/order.entity';
+import { Repository, DataSource } from 'typeorm';
+import { Order, OrderStatus, PaymentMethod } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+
+const TAX_RATE = 0.13; // 13% tax rate
+const SHIPPING_COST = 150; // Flat shipping cost
 
 @Injectable()
 export class OrdersService {
@@ -17,146 +21,124 @@ export class OrdersService {
     private orderRepository: Repository<Order>,
     @InjectRepository(OrderItem)
     private orderItemRepository: Repository<OrderItem>,
-
     private dataSource: DataSource,
   ) {}
 
-  // Get all orders
-  async getAllOrders(): Promise<Order[]> {
+  async createOrder(userId: string, createOrderDto: CreateOrderDto): Promise<Order> {
     try {
-      return this.orderRepository.find({ relations: ['orderItems'] });
+      return await this.dataSource.manager.transaction(async (manager) => {
+        const subtotal = createOrderDto.orderItems.reduce(
+          (sum, item) => sum + item.quantity * Number(item.price),
+          0,
+        );
+
+        const taxAmount = Math.round((subtotal * TAX_RATE) * 100) / 100;
+        const shippingCost = SHIPPING_COST;
+        const discountAmount = createOrderDto.discountAmount || 0;
+        const totalAmount = subtotal + taxAmount + shippingCost - discountAmount;
+
+        const order = manager.create(Order, {
+          userId,
+          subtotal,
+          taxAmount,
+          shippingCost,
+          discountAmount,
+          totalAmount,
+          shippingAddress: createOrderDto.shippingAddress,
+          billingAddress: createOrderDto.billingAddress || createOrderDto.shippingAddress,
+          paymentMethod: createOrderDto.paymentMethod,
+          status: OrderStatus.PENDING,
+          paymentStatus: 'pending',
+        });
+
+        const savedOrder = await manager.save(order);
+
+        const orderItems = createOrderDto.orderItems.map((item) =>
+          manager.create(OrderItem, {
+            orderId: savedOrder.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          }),
+        );
+
+        await manager.save(orderItems);
+        return manager.findOne(Order, {
+          where: { id: savedOrder.id },
+          relations: ['orderItems'],
+        });
+      });
     } catch (error) {
-      throw new InternalServerErrorException(error);
+      throw new InternalServerErrorException(`Failed to create order: ${error}`);
     }
   }
 
-  // Get order by id
-  async getOrderById(id: number): Promise<Order> {
+  async getUserOrders(userId: string): Promise<Order[]> {
+    try {
+      return await this.orderRepository.find({
+        where: { userId },
+        relations: ['orderItems'],
+        order: { orderDate: 'DESC' },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(`Failed to fetch user orders: ${error}`);
+    }
+  }
+
+  async getOrderById(id: string): Promise<Order> {
     try {
       const order = await this.orderRepository.findOne({
-        where: { id: id.toString() },
+        where: { id },
         relations: ['orderItems'],
       });
       if (!order) throw new NotFoundException(`Order ${id} not found`);
       return order;
     } catch (error) {
-      throw new InternalServerErrorException(error);
+      throw new InternalServerErrorException(`Failed to fetch order: ${error}`);
     }
   }
 
-  // Create new order
-  async createOrder(createOrderDto: CreateOrderDto): Promise<Order | null> {
-    const totalAmount = createOrderDto.orderItems.reduce(
-      (sum, item) => sum + item.quantity * item.price,
-      0,
-    );
-
+  async updateOrderStatus(id: string, status: OrderStatus): Promise<Order> {
     try {
-      return await this.dataSource.manager.transaction(
-        async (transactionalEntityManager) => {
-          // Create and save order
-          const order = transactionalEntityManager.create(Order, {
-            ...createOrderDto,
-            totalAmount,
-            paymentMethod: createOrderDto.paymentMethod as PaymentMethod,
-          });
-
-          const createdOrder = await transactionalEntityManager.save(order);
-
-          const orderItems = createOrderDto.orderItems.map((item) =>
-            transactionalEntityManager.create(OrderItem, {
-              ...item,
-              productId: { id: item.productId },
-              order: createdOrder,
-            }),
-          );
-
-          await transactionalEntityManager.save(orderItems);
-
-          // Return the full order with items
-          return transactionalEntityManager.findOne(Order, {
-            where: { id: createdOrder.id },
-            relations: ['orderItems'],
-          });
-        },
-      );
-
-      //   const order = this.orderRepository.create({
-      //     ...createOrderDto,
-      //     totalAmount,
-      //     status: OrderStatus.PENDING, // default status
-      //     orderItems: createOrderDto.orderItems,
-      //     paymentMethod: createOrderDto.paymentMethod as PaymentMethod,
-      //   });
-
-      //   return this.orderRepository.save(order);
+      const order = await this.getOrderById(id);
+      order.status = status;
+      return await this.orderRepository.save(order);
     } catch (error) {
-      console.log(error);
-      throw new InternalServerErrorException(error);
+      throw new InternalServerErrorException(`Failed to update order: ${error}`);
     }
   }
 
-  // Update order
-  async updateOrder(
-    id: number,
-    updateOrderDto: UpdateOrderDto,
-  ): Promise<Order> {
+  async updatePaymentStatus(id: string, status: string): Promise<Order> {
     try {
-      const existingOrder = await this.orderRepository.findOne({
-        where: { id: id.toString() },
-        relations: ['orderItems'],
-      });
-      if (!existingOrder) throw new NotFoundException(`Order ${id} not found`);
-
-      // Merge DTO into existing order
-      const updatedOrder = this.orderRepository.merge(existingOrder, {
-        ...updateOrderDto,
-        paymentMethod: updateOrderDto.paymentMethod as PaymentMethod,
-        status: updateOrderDto.status as OrderStatus,
-      });
-
-      // Recalculate totalAmount if orderItems updated
-      if (updateOrderDto.orderItems) {
-        updatedOrder.totalAmount = updateOrderDto.orderItems.reduce(
-          (sum, item) => sum + item.quantity * item.price,
-          0,
-        );
+      const order = await this.getOrderById(id);
+      order.paymentStatus = status;
+      if (status === 'success') {
+        order.status = OrderStatus.CONFIRMED;
       }
-
-      return this.orderRepository.save(updatedOrder);
+      return await this.orderRepository.save(order);
     } catch (error) {
-      throw new InternalServerErrorException(error);
+      throw new InternalServerErrorException(`Failed to update payment status: ${error}`);
     }
   }
 
-  // Update only order status
-  async updateOrderStatus(id: number, status: OrderStatus): Promise<Order> {
+  async getAllOrders(): Promise<Order[]> {
     try {
-      const existingOrder = await this.orderRepository.findOne({
-        where: { id: id.toString() },
+      return await this.orderRepository.find({
         relations: ['orderItems'],
+        order: { orderDate: 'DESC' },
       });
-      if (!existingOrder) throw new NotFoundException(`Order ${id} not found`);
-
-      existingOrder.status = status;
-      return this.orderRepository.save(existingOrder);
     } catch (error) {
-      throw new InternalServerErrorException(error);
+      throw new InternalServerErrorException(`Failed to fetch orders: ${error}`);
     }
   }
 
-  // Delete order
-  async deleteOrder(id: number): Promise<string> {
+  async deleteOrder(id: string): Promise<{ message: string }> {
     try {
-      const existingOrder = await this.orderRepository.findOne({
-        where: { id: id.toString() },
-      });
-      if (!existingOrder) throw new NotFoundException(`Order ${id} not found`);
-
-      await this.orderRepository.delete(id);
-      return 'Deleted Successfully';
+      const order = await this.getOrderById(id);
+      await this.orderRepository.remove(order);
+      return { message: 'Order deleted successfully' };
     } catch (error) {
-      throw new InternalServerErrorException(error);
+      throw new InternalServerErrorException(`Failed to delete order: ${error}`);
     }
   }
 }

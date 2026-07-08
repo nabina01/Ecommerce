@@ -3,10 +3,12 @@ import {
   PrimaryGeneratedColumn,
   Column,
   OneToMany,
+  ManyToOne,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { OrderItem } from './order-item.entity';
+import { User } from 'src/users/entities/user.entity';
 
 export enum OrderStatus {
   PENDING = 'pending',
@@ -17,22 +19,35 @@ export enum OrderStatus {
 }
 
 export enum PaymentMethod {
-  CREDIT_CARD = 'credit_card',
-  DEBIT_CARD = 'debit_card',
-  PAYPAL = 'paypal',
-  CASH_ON_DELIVERY = 'cash_on_delivery',
+  ESEWA = 'esewa',
+  BANK = 'bank',
 }
 
 @Entity('orders')
 export class Order {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column('uuid')
   userId: string;
 
-  @Column('decimal')
+  @ManyToOne(() => User)
+  user: User;
+
+  @Column('decimal', { precision: 10, scale: 2 })
   totalAmount: number;
+
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  subtotal: number;
+
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  taxAmount: number;
+
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  shippingCost: number;
+
+  @Column('decimal', { precision: 10, scale: 2, default: 0, nullable: true })
+  discountAmount?: number;
 
   @Column({
     type: 'enum',
@@ -44,11 +59,20 @@ export class Order {
   @Column()
   shippingAddress: string;
 
+  @Column({ nullable: true })
+  billingAddress: string;
+
   @Column({
     type: 'enum',
     enum: PaymentMethod,
   })
   paymentMethod: PaymentMethod;
+
+  @Column({ nullable: true })
+  paymentTransactionId: string;
+
+  @Column({ default: 'pending' })
+  paymentStatus: string;
 
   @CreateDateColumn()
   orderDate: Date;
@@ -59,6 +83,6 @@ export class Order {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToMany(() => OrderItem, (orderItem) => orderItem.order)
+  @OneToMany(() => OrderItem, (orderItem) => orderItem.order, { cascade: true })
   orderItems: OrderItem[];
 }

@@ -42,17 +42,23 @@ export class UsersService {
   }
 
   // GET ALL USERS
-  async getAllUsers(): Promise<User[]> {
-    return this.userRepository.find();
+  async getAllUsers(): Promise<Omit<User, 'password'>[]> {
+    const users = await this.userRepository.find();
+    return users.map(user => this.excludePassword(user));
   }
 
   // GET USER BY ID
-  async getUserById(id: string): Promise<User> {
+  async getUserById(id: string): Promise<Omit<User, 'password'>> {
     const user = await this.userRepository.findOne({
       where: { id: String(id) },
     });
     if (!user) throw new NotFoundException(`User with ID ${id} not found`);
-    return user;
+    return this.excludePassword(user);
+  }
+
+  private excludePassword(user: User): Omit<User, 'password'> {
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
   }
 
   // UPDATE USER

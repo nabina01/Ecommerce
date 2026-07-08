@@ -1,26 +1,68 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { CartItem } from '../../cart/entities/cart.entity';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { User } from 'src/users/entities/user.entity';
+import { Order } from 'src/orders/entities/order.entity';
 
-@Entity()
+export enum PaymentStatus {
+  PENDING = 'pending',
+  SUCCESS = 'success',
+  FAILED = 'failed',
+  CANCELLED = 'cancelled',
+}
+
+export enum PaymentMethod {
+  ESEWA = 'esewa',
+  BANK = 'bank',
+}
+
+@Entity('payments')
 export class Payment {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column('decimal')
+  @Column('uuid')
+  orderId: string;
+
+  @Column('uuid')
+  userId: string;
+
+  @Column('decimal', { precision: 10, scale: 2 })
   amount: number;
 
-  @Column()
-  method: string;
+  @Column({
+    type: 'enum',
+    enum: PaymentMethod,
+  })
+  method: PaymentMethod;
 
-  @Column()
-  userId: number;
+  @Column({
+    type: 'enum',
+    enum: PaymentStatus,
+    default: PaymentStatus.PENDING,
+  })
+  status: PaymentStatus;
 
-  @Column({ default: 'success' })
-  status: string;
+  @Column({ nullable: true })
+  transactionId: string;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  date: Date;
+  @Column({ type: 'jsonb', nullable: true })
+  metadata: Record<string, any>;
 
-  @OneToMany(() => CartItem, (cartItem) => cartItem.payment)
-  cartItems: CartItem[];
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @ManyToOne(() => User)
+  user: User;
+
+  @ManyToOne(() => Order)
+  order: Order;
 }

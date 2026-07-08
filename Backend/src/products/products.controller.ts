@@ -6,74 +6,71 @@ import {
   Param,
   Get,
   Delete,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { Product } from './entities/product.entity';
+import { Auth } from 'src/users/decorators/auth.decorators';
+import { UserRole } from 'src/users/entities/user.entity';
 
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  @Post()
-  addProduct(@Body() productBody: CreateProductDto) {
-    return this.productsService.addProduct(productBody);
+  @Get()
+  getAll(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query('search') search?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('sortBy') sortBy: 'price' | 'name' | 'createdAt' = 'createdAt',
+    @Query('sortOrder') sortOrder: 'ASC' | 'DESC' = 'DESC',
+  ) {
+    return this.productsService.getAll(
+      Number(page),
+      Number(limit),
+      search,
+      categoryId,
+      sortBy,
+      sortOrder,
+    );
   }
 
-  @Put('/:id')
-  updateProduct(
+  @Get('search')
+  searchByName(@Query('name') name: string) {
+    return this.productsService.searchByName(name);
+  }
+
+  @Get('category/:categoryId')
+  getByCategory(@Param('categoryId') categoryId: string) {
+    return this.productsService.getByCategory(categoryId);
+  }
+
+  @Get(':id')
+  getById(@Param('id') id: string) {
+    return this.productsService.getById(id);
+  }
+
+  @Post()
+  @Auth(UserRole.ADMIN)
+  create(@Body() createProductDto: CreateProductDto) {
+    return this.productsService.createProduct(createProductDto);
+  }
+
+  @Put(':id')
+  @Auth(UserRole.ADMIN)
+  update(
     @Param('id') id: string,
     @Body() updateProductDto: UpdateProductDto,
   ) {
-    return this.productsService.updateProduct(id, updateProductDto);
+    return this.productsService.update(id, updateProductDto);
   }
 
-  @Get()
-  getAllProduct(): Promise<Product[]> {
-    return this.productsService.getAllProducts();
+  @Delete(':id')
+  @Auth(UserRole.ADMIN)
+  delete(@Param('id') id: string) {
+    return this.productsService.delete(id);
   }
-
-  @Get('/:id')
-  getProductById(@Param('id') id: string) {
-    return this.productsService.getOneProduct(id);
-  }
-
-  @Delete('/:id')
-  deleteProduct(@Param('id') id: string) {
-    return this.productsService.deleteProduct(id);
-  }
-
-  // @Post()
-  // createProduct(
-  //   @Req() req: Express.Request,
-  //   @Res() res: Express.Response,
-
-  //   @Body('name') name: string,
-  //   @Body('price') price: number,
-  // ): void {
-  //   console.log(req);
-  //   console.log(name, price);
-
-  //   res.status(HttpStatus.CREATED).send({
-  //     message: `product ${name} with price ${price} created successfully!`,
-  //   });
-  // }
-  // @Post('/create')
-  // addProduct(@Body() createProductDto: CreateProductDto) {
-  //   console.log(createProductDto)
-  // }
-  // @Put('/:id')
-  // updateProduct(@Param('id') id: string, @Query('data') data: string) {
-  //   if (id == 'hello') {
-  //     throw new ForbiddenException('you are not allowed to update hello');
-  //   }
-  //   return `Hello from put request and id is ${id} and data is ${data}`;
-  // }
-  // @Delete('/:id')
-  // deleteProduct(@Param('id', ParseIntPipe) id: number
-  // ): string {
-  //   console.log(typeof id);
-  //   return `Hello from delete request and id is ${id}`
-  // }
 }

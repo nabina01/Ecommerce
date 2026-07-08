@@ -6,57 +6,28 @@ import {
   Delete,
   Param,
   Body,
-  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import {
-  LoggedInUser,
-  type RequestWithUser,
-} from './decorators/user.decorators';
+import { LoggedInUser, User } from './decorators/user.decorators';
 import { CustomBody } from './decorators/custom-body.decorator';
 import { UserRole } from './entities/user.entity';
 import { Auth } from './decorators/auth.decorators';
+import { AuthGuard } from './auth/auth.guard';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  // Get all users
-  @Get()
-  @Auth(UserRole.ADMIN)
-  getAllUsers(@Req() req: RequestWithUser) {
-    const user = req.user;
-    console.log(user);
-    return this.usersService.getAllUsers();
+  // Auth endpoints
+  @Post('auth/signup')
+  signup(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.signup(createUserDto);
   }
 
-  // Get user by ID
-  @Get(':id')
-  @Auth(UserRole.ADMIN)
-  getUserById(@LoggedInUser() user, @Param('id') id: string) {
-    return this.usersService.getUserById(id);
-  }
-
-  // Admin-only endpoints (register/login handled below)
-
-  // Create user
-  @Post()
-  createUser(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.createUser(createUserDto);
-  }
-
-  // Create admin user (force role ADMIN) - public for testing only, protect this in production
-  @Post('/admin/register')
-  async createAdmin(@Body() createUserDto: CreateUserDto) {
-    // Force role to ADMIN regardless of client-provided value
-    const dto = { ...createUserDto, role: 'admin' } as CreateUserDto;
-    return this.usersService.createUser(dto);
-  }
-
-  // Login
-  @Post('/login')
+  @Post('auth/login')
   login(
     @CustomBody('email') email: string,
     @CustomBody('password') password: string,
@@ -64,19 +35,42 @@ export class UsersController {
     return this.usersService.login(email, password);
   }
 
-  // Signup (create user and return token)
-  @Post('/signup')
-  signup(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.signup(createUserDto);
+  @Post('auth/logout')
+  @UseGuards(AuthGuard)
+  logout(@User() user: { id: string }) {
+    // Logout is handled client-side (token removal)
+    // This endpoint serves as a verification point
+    return { message: 'Logout successful', userId: user.id };
   }
-  // Update user
-  @Patch(':id')
+
+  @Get('auth/me')
+  @UseGuards(AuthGuard)
+  getCurrentUser(@User() user: any) {
+    return user;
+  }
+
+  // User profile endpoints
+  @Get('profile/:id')
+  @UseGuards(AuthGuard)
+  getUserById(@Param('id') id: string) {
+    return this.usersService.getUserById(id);
+  }
+
+  @Patch('profile/:id')
+  @UseGuards(AuthGuard)
   updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.updateUser(id, updateUserDto);
   }
 
-  // Delete user
+  // Admin endpoints
+  @Get()
+  @Auth(UserRole.ADMIN)
+  getAllUsers() {
+    return this.usersService.getAllUsers();
+  }
+
   @Delete(':id')
+  @Auth(UserRole.ADMIN)
   deleteUser(@Param('id') id: string) {
     return this.usersService.deleteUser(id);
   }

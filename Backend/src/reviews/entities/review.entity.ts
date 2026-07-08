@@ -9,8 +9,8 @@ import {
 import { User } from 'src/users/entities/user.entity';
 import { Product } from 'src/products/entities/product.entity';
 
-@Entity('cart_items')
-export class CartItem {
+@Entity('reviews')
+export class Review {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -20,24 +20,21 @@ export class CartItem {
   @Column('uuid')
   productId: string;
 
-  @Column('int', { default: 1 })
-  quantity: number;
+  @Column('int')
+  rating: number;
 
-  @Column('decimal', { precision: 10, scale: 2 })
-  price: number;
+  @Column('text', { nullable: true })
+  comment: string;
 
-  @Column({ nullable: true })
-  selectedVariant?: string;
+  @ManyToOne(() => User)
+  user: User;
+
+  @ManyToOne(() => Product)
+  product: Product;
 
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
-
-  @ManyToOne(() => User, { eager: false })
-  user: User;
-
-  @ManyToOne(() => Product, { eager: false })
-  product: Product;
 }

@@ -8,6 +8,11 @@ import { OrdersModule } from "./orders/orders.module";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { UploadModule } from "./upload/upload.module";
 import { ConfigModule } from "@nestjs/config";
+import { CartModule } from "./cart/cart.module";
+import { PaymentModule } from "./payment/payment.module";
+import { WishlistModule } from "./wishlist/wishlist.module";
+import { ReviewModule } from "./reviews/reviews.module";
+import { AdminModule } from "./admin/admin.module";
 import config from "./config/config";
 
 @Module({
@@ -32,6 +37,11 @@ import config from "./config/config";
     ProductsModule,
     CategoriesModule,
     OrdersModule,
+    CartModule,
+    PaymentModule,
+    WishlistModule,
+    ReviewModule,
+    AdminModule,
     UploadModule,
   ],
   controllers: [AppController],

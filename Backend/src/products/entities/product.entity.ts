@@ -6,38 +6,54 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
+
+export interface Variant {
+  color: string;
+  size: string;
+  stock: number;
+}
 
 @Entity('products')
 export class Product {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column('uuid')
+  categoryId: string;
+
   @Column()
   name: string;
 
-  @Column()
+  @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 
-  @Column()
+  @Column('text')
   description: string;
 
-  @Column()
-  imageUrls: string;
+  @Column('simple-array', { nullable: true })
+  imageUrls: string[];
 
-  @Column({ type: 'jsonb' }) //jasonb  stored in a binary format
-  variants: variant[]; //array of objects
+  @Column({ type: 'jsonb', default: '[]' })
+  variants: Variant[];
+
+  @Column('int', { default: 0 })
+  stock: number;
+
+  @Column({ default: true })
+  isActive: boolean;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 
   @OneToMany(() => OrderItem, (orderItem) => orderItem.product)
   orderItems: OrderItem[];
-  category: any;
 
   @ManyToOne(() => Category, (category) => category.products)
-  categories: Category;
+  category: Category;
 }
-
-type variant = {
-  color: string;
-  size: string;
-  stock: number;
-};

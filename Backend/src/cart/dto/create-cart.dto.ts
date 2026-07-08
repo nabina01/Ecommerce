@@ -1,12 +1,20 @@
-import { IsNotEmpty, IsNumber, Min } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, Min, IsOptional } from 'class-validator';
 
 export class CreateCartDto {
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  productId: number;
+  productId: string;
 
   @IsNumber()
   @IsNotEmpty()
   @Min(1)
   quantity: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  price: number;
+
+  @IsOptional()
+  @IsString()
+  selectedVariant?: string;
 }
